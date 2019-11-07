@@ -1,0 +1,40 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            url "http://repository.jboss.org/nexus/content/groups/public/"
+        }
+    }
+    dependencies {
+        classpath 'org.hibernate.build.gradle:gradle-maven-publish-auth:2.0.1'
+    }
+}
+
+plugins {
+    id 'java'
+    id 'maven'
+}
+
+apply plugin: 'maven-publish'
+apply plugin: 'maven-publish-auth'
+
+group = 'net.unboundnetwork'
+version = '1.0.0-SNAPSHOT'
+
+sourceCompatibility = targetCompatibility = "1.8"
+compileJava {
+    sourceCompatibility = targetCompatibility = "1.8"
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url "https://nexus.unboundnetwork.net/repository/unbound-public/"
+    }
+    maven { url = "https://repo.aikar.co/content/groups/aikar/" }
+}
+
+dependencies {
+    compile "com.nickimpact.impactor:spigot:2.1.0"
+    compile "org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT"
+}
