@@ -38,3 +38,24 @@ dependencies {
     compile "com.nickimpact.impactor:spigot:2.1.0"
     compile "org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT"
 }
+
+publishing {
+    repositories {
+        maven {
+            name = "Unbound-Public"
+            url = "https://nexus.unboundnetwork.net/repository/unbound-public/"
+            credentials {
+                username project.hasProperty('nexus-username') ? project.property('nexus-username') : ''
+                password project.hasProperty('nexus-password') ? project.property('nexus-password') : ''
+            }
+        }
+    }
+
+    publications {
+        plugin(MavenPublication) {
+            groupId project.group
+            artifactId "cinematics"
+            version project.version
+        }
+    }
+}
