@@ -53,6 +53,7 @@ publishing {
 
     publications {
         plugin(MavenPublication) {
+            from components.java
             groupId project.group
             artifactId "cinematics"
             version project.version
