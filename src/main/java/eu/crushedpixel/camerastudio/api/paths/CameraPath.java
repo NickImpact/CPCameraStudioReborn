@@ -21,6 +21,7 @@ public class CameraPath {
 
 	private UUID world;
 	private List<Vector> travelPath;
+	private List<Rotation> rotation;
 	private long travelTime;
 	private EnumEndPoint endPoint;
 	private Location customEnd;
@@ -30,10 +31,11 @@ public class CameraPath {
 	private transient DataHolder data;
 	private transient List<Executor> runningExecutors = Lists.newArrayList();
 
-	public CameraPath(World world, List<Vector> locations, long seconds, EnumEndPoint endPoint, Location customEnd) {
+	public CameraPath(World world, List<Vector> locations, List<Rotation> rotation, long seconds, EnumEndPoint endPoint, Location customEnd) {
 		this.world = world.getUID();
 		this.travelPath = locations;
-		this.travelTime = seconds * 20;
+		this.rotation = rotation;
+		this.travelTime = seconds * 10;
 		this.endPoint = endPoint;
 		if(endPoint == EnumEndPoint.Custom) {
 			if(customEnd == null) {
@@ -49,7 +51,7 @@ public class CameraPath {
 
 	private void init() {
 		this.data = new DataHolder();
-		this.data.load(Bukkit.getWorld(this.world), this.travelPath, this.travelTime);
+		this.data.load(Bukkit.getWorld(this.world), this.travelPath, this.rotation, this.travelTime);
 		this.runningExecutors = Lists.newArrayList();
 	}
 
@@ -224,12 +226,12 @@ public class CameraPath {
 
 		double totalDiff = 0.0;
 
-		void load(World world, List<Vector> locations, long time) {
+		void load(World world, List<Vector> locations, List<Rotation> rotation, long time) {
 			for(int i = 0; i < locations.size() - 1; i++) {
 				Vector o = locations.get(i);
 				Vector p = locations.get(i + 1);
 
-				double diff = GeneralUtils.positionDifference(new Location(world, o.getX(), o.getY(), o.getZ()), new Location(world, p.getX(), p.getY(), p.getZ()));
+				double diff = GeneralUtils.positionDifference(new Location(world, o.getX(), o.getY(), o.getZ(), rotation.get(i).pitch, rotation.get(i).yaw), new Location(world, p.getX(), p.getY(), p.getZ(), rotation.get(i + 1).pitch, rotation.get(i + 1).yaw));
 				totalDiff += diff;
 				diffs.add(diff);
 			}
@@ -242,8 +244,8 @@ public class CameraPath {
 				Vector o = locations.get(i);
 				Vector p = locations.get(i + 1);
 
-				Location s = new Location(world, o.getX(), o.getY(), o.getZ());
-				Location n = new Location(world, p.getX(), p.getY(), p.getZ());
+				Location s = new Location(world, o.getX(), o.getY(), o.getZ(), rotation.get(i).pitch, rotation.get(i).yaw);
+				Location n = new Location(world, p.getX(), p.getY(), p.getZ(), rotation.get(i + 1).pitch, rotation.get(i + 1).yaw);
 				int t = travelTimes.get(i);
 
 				double moveX = n.getX() - s.getX();
@@ -278,6 +280,16 @@ public class CameraPath {
 					tps.add(l);
 				}
 			}
+		}
+	}
+
+	public class Rotation {
+		private float pitch;
+		private float yaw;
+
+		public Rotation(float pitch, float yaw) {
+			this.pitch = pitch;
+			this.yaw = yaw;
 		}
 	}
 }

@@ -4,7 +4,9 @@ import eu.crushedpixel.camerastudio.api.paths.CameraPath;
 import eu.crushedpixel.camerastudio.api.paths.EnumEndPoint;
 import eu.crushedpixel.camerastudio.api.utils.GeneralUtils;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.util.Vector;
 
 import java.util.List;
 
@@ -21,11 +23,11 @@ public interface CameraStudioService {
 	 * @param endPoint The type of end point the path should have
 	 * @param customEnd If the end point is custom, it must have that value specified. Otherwise, will default to path's end
 	 */
-	default void travel(Player player, String timeInput, List<Location> locations, EnumEndPoint endPoint, Location customEnd) {
-		this.travel(player, GeneralUtils.parseTimeString(timeInput), locations, endPoint, customEnd);
+	default void travel(Player player, String timeInput, World world, List<Vector> locations, List<CameraPath.Rotation> rotations, EnumEndPoint endPoint, Location customEnd) {
+		this.travel(player, GeneralUtils.parseTimeString(timeInput), world, locations, rotations, endPoint, customEnd);
 	}
 
-	void travel(Player player, long time, List<Location> locations, EnumEndPoint endPoint, Location customEnd);
+	void travel(Player player, long time, World world, List<Vector> locations, List<CameraPath.Rotation> rotations, EnumEndPoint endPoint, Location customEnd);
 
 	void travel(Player player, CameraPath path);
 
