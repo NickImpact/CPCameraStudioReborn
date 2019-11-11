@@ -283,7 +283,7 @@ public class CameraPath {
 		}
 	}
 
-	public class Rotation {
+	public static class Rotation {
 		private float pitch;
 		private float yaw;
 
