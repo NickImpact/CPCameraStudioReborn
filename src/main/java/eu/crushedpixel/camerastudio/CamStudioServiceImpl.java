@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class CamStudioServiceImpl implements CameraStudioService {
 
@@ -17,7 +18,7 @@ public class CamStudioServiceImpl implements CameraStudioService {
 
 	@Override
 	public void travel(Player player, long time, List<Location> locations, EnumEndPoint endPoint, Location customEnd) {
-		CameraPath path = new CameraPath(locations, time, endPoint, customEnd);
+		CameraPath path = new CameraPath(locations.get(0).getWorld(), locations.stream().map(Location::toVector).collect(Collectors.toList()), time, endPoint, customEnd);
 		this.paths.put(player.getUniqueId(), path);
 		path.play(player, id -> paths.remove(id));
 	}

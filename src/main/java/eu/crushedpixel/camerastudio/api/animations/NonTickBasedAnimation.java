@@ -1,6 +1,6 @@
 package eu.crushedpixel.camerastudio.api.animations;
 
-import com.nickimpact.impactor.api.animations.AsyncAnimation;
+import com.nickimpact.impactor.api.animations.SyncAnimation;
 import com.nickimpact.impactor.api.plugin.ImpactorPlugin;
 import com.nickimpact.impactor.spigot.SpigotImpactorPlugin;
 import org.bukkit.Bukkit;
@@ -9,7 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public abstract class NonTickBasedAnimation extends AsyncAnimation<ScheduledExecutorService> {
+public abstract class NonTickBasedAnimation extends SyncAnimation<ScheduledExecutorService> {
 
 	public NonTickBasedAnimation(ImpactorPlugin plugin) {
 		super(plugin);
@@ -27,7 +27,7 @@ public abstract class NonTickBasedAnimation extends AsyncAnimation<ScheduledExec
 	}
 
 	@Override
-	public void fireSync(Runnable runnable) {
-		Bukkit.getScheduler().runTask(SpigotImpactorPlugin.getInstance(), runnable);
+	public void fireAsync(Runnable runnable) {
+		Bukkit.getScheduler().runTaskAsynchronously(SpigotImpactorPlugin.getInstance(), runnable);
 	}
 }

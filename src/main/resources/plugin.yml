@@ -2,6 +2,7 @@ name: CPCameraStudioReborn
 main: eu.crushedpixel.camerastudio.CameraStudio
 authors: [CrushredPixel, chrismin13]
 version: 1.4.2
+depend: [Impactor]
 
 commands:
   cam:

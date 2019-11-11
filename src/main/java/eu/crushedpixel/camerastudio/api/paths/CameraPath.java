@@ -1,7 +1,6 @@
 package eu.crushedpixel.camerastudio.api.paths;
 
 import com.google.common.collect.Lists;
-import com.nickimpact.impactor.spigot.animations.SpigotAsyncAnimation;
 import eu.crushedpixel.camerastudio.CameraStudio;
 import eu.crushedpixel.camerastudio.api.animations.NonTickBasedAnimation;
 import eu.crushedpixel.camerastudio.api.events.CameraPathCompleteEvent;
@@ -12,7 +11,7 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerTeleportEvent;
-import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Vector;
 
 import java.util.List;
 import java.util.UUID;
@@ -20,7 +19,8 @@ import java.util.function.Consumer;
 
 public class CameraPath {
 
-	private List<Location> travelPath;
+	private UUID world;
+	private List<Vector> travelPath;
 	private long travelTime;
 	private EnumEndPoint endPoint;
 	private Location customEnd;
@@ -30,13 +30,15 @@ public class CameraPath {
 	private transient DataHolder data;
 	private transient List<Executor> runningExecutors = Lists.newArrayList();
 
-	public CameraPath(List<Location> locations, long seconds, EnumEndPoint endPoint, Location customEnd) {
+	public CameraPath(World world, List<Vector> locations, long seconds, EnumEndPoint endPoint, Location customEnd) {
+		this.world = world.getUID();
 		this.travelPath = locations;
-		this.travelTime = seconds;
+		this.travelTime = seconds * 20;
 		this.endPoint = endPoint;
 		if(endPoint == EnumEndPoint.Custom) {
 			if(customEnd == null) {
-				this.customEnd = this.travelPath.get(this.travelPath.size() - 1);
+				Vector end = this.travelPath.get(this.travelPath.size() - 1);
+				this.customEnd = new Location(world, end.getX(), end.getY(), end.getZ());
 			} else {
 				this.customEnd = customEnd;
 			}
@@ -47,7 +49,7 @@ public class CameraPath {
 
 	private void init() {
 		this.data = new DataHolder();
-		this.data.load(this.travelPath, this.travelTime);
+		this.data.load(Bukkit.getWorld(this.world), this.travelPath, this.travelTime);
 		this.runningExecutors = Lists.newArrayList();
 	}
 
@@ -62,14 +64,14 @@ public class CameraPath {
 			}
 		}
 
-		Executor executor = new Executor(player, callback.andThen(id -> {
+		Executor2 executor = new Executor2(player, callback.andThen(id -> {
 			Bukkit.getPluginManager().callEvent(new CameraPathCompleteEvent(player));
 		}));
 		executor.load(this.travelTime, this.endPoint, this.customEnd, this.data);
 		player.setGameMode(GameMode.SPECTATOR);
 		this.inProgress = true;
-		executor.play(false);
-		this.runningExecutors.add(executor);
+		executor.run();
+		//this.runningExecutors.add(executor);
 	}
 
 	public boolean isInProgress() {
@@ -81,6 +83,61 @@ public class CameraPath {
 			executor.stop();
 			this.runningExecutors.remove(executor);
 		});
+	}
+
+	public class Executor2 {
+		private UUID player;
+		private Consumer<UUID> callback;
+
+		private EnumEndPoint endPoint;
+		private Location lEndPoint;
+
+		private DataHolder data;
+
+		private GameMode priorMode;
+
+		private int frames = 0;
+
+		Executor2(Player player, Consumer<UUID> callback) {
+			this.player = player.getUniqueId();
+			this.priorMode = player.getGameMode();
+			this.callback = callback;
+		}
+
+		void load(long time, EnumEndPoint endPoint, Location customEnd, DataHolder data) {
+			this.endPoint = endPoint;
+			this.lEndPoint = customEnd;
+
+			this.data = data;
+		}
+
+		public void run() {
+			Player player = Bukkit.getPlayer(this.player);
+			player.teleport(data.tps.get(0));
+			player.setGameMode(GameMode.SPECTATOR);
+			Bukkit.getScheduler().scheduleSyncDelayedTask(CameraStudio.instance, new Runnable() {
+				@Override
+				public void run() {
+					if(frames < data.tps.size()) {
+						player.teleport(data.tps.get(frames++));
+						Bukkit.getScheduler().scheduleSyncDelayedTask(CameraStudio.instance, this, 2L);
+					} else {
+						if(endPoint == EnumEndPoint.Custom) {
+							player.teleport(lEndPoint, PlayerTeleportEvent.TeleportCause.PLUGIN);
+						}
+
+						player.setGameMode(priorMode);
+						for(Player o : Bukkit.getOnlinePlayers()) {
+							if(!o.getUniqueId().equals(player.getUniqueId())) {
+								player.showPlayer(CameraStudio.instance, o);
+							}
+						}
+						callback.accept(player.getUniqueId());
+					}
+				}
+			}, 2L);
+		}
+
 	}
 
 	public class Executor extends NonTickBasedAnimation {
@@ -115,10 +172,11 @@ public class CameraPath {
 		@Override
 		protected void playFrame(int i) {
 			if(i >= data.tps.size()) {
-				this.stop();
+				this.end();
 				return;
 			}
-			Bukkit.getScheduler().runTask(CameraStudio.instance, () -> Bukkit.getPlayer(player).teleport(data.tps.get(i)));
+
+			Bukkit.getPlayer(player).teleport(data.tps.get(i), PlayerTeleportEvent.TeleportCause.PLUGIN);
 		}
 
 		@Override
@@ -142,18 +200,17 @@ public class CameraPath {
 		@Override
 		public Runnable whenComplete() {
 			return () -> {
-				Bukkit.getScheduler().runTask(CameraStudio.instance, () -> {
-					Player p = Bukkit.getPlayer(player);
-					if(this.endPoint == EnumEndPoint.Custom) {
-						p.teleport(this.lEndPoint, PlayerTeleportEvent.TeleportCause.PLUGIN);
-						p.setGameMode(this.priorMode);
-						for(Player o : Bukkit.getOnlinePlayers()) {
-							if(!o.getUniqueId().equals(p.getUniqueId())) {
-								p.showPlayer(CameraStudio.instance, o);
-							}
-						}
+				Player p = Bukkit.getPlayer(player);
+				if(this.endPoint == EnumEndPoint.Custom) {
+					p.teleport(this.lEndPoint, PlayerTeleportEvent.TeleportCause.PLUGIN);
+				}
+
+				p.setGameMode(this.priorMode);
+				for(Player o : Bukkit.getOnlinePlayers()) {
+					if(!o.getUniqueId().equals(p.getUniqueId())) {
+						p.showPlayer(CameraStudio.instance, o);
 					}
-				});
+				}
 				callback.accept(player);
 				runningExecutors.removeIf(executor -> executor.player.equals(player));
 			};
@@ -167,9 +224,12 @@ public class CameraPath {
 
 		double totalDiff = 0.0;
 
-		void load(List<Location> locations, long time) {
+		void load(World world, List<Vector> locations, long time) {
 			for(int i = 0; i < locations.size() - 1; i++) {
-				double diff = GeneralUtils.positionDifference(locations.get(i), locations.get(i + 1));
+				Vector o = locations.get(i);
+				Vector p = locations.get(i + 1);
+
+				double diff = GeneralUtils.positionDifference(new Location(world, o.getX(), o.getY(), o.getZ()), new Location(world, p.getX(), p.getY(), p.getZ()));
 				totalDiff += diff;
 				diffs.add(diff);
 			}
@@ -178,10 +238,12 @@ public class CameraPath {
 				travelTimes.add((int) (d / totalDiff * time));
 			}
 
-			World world = locations.get(0).getWorld();
 			for(int i = 0; i < locations.size() - 1; i++) {
-				Location s = locations.get(i);
-				Location n = locations.get(i + 1);
+				Vector o = locations.get(i);
+				Vector p = locations.get(i + 1);
+
+				Location s = new Location(world, o.getX(), o.getY(), o.getZ());
+				Location n = new Location(world, p.getX(), p.getY(), p.getZ());
 				int t = travelTimes.get(i);
 
 				double moveX = n.getX() - s.getX();
