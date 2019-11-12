@@ -12,9 +12,9 @@ import java.util.UUID;
 public class CameraPosition {
 
 	private UUID world;
-	private int x;
-	private int y;
-	private int z;
+	private double x;
+	private double y;
+	private double z;
 	private float pitch;
 	private float yaw;
 
