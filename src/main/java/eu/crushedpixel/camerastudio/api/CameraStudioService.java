@@ -1,12 +1,11 @@
 package eu.crushedpixel.camerastudio.api;
 
 import eu.crushedpixel.camerastudio.api.paths.CameraPath;
+import eu.crushedpixel.camerastudio.api.paths.CameraPosition;
 import eu.crushedpixel.camerastudio.api.paths.EnumEndPoint;
 import eu.crushedpixel.camerastudio.api.utils.GeneralUtils;
 import org.bukkit.Location;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
-import org.bukkit.util.Vector;
 
 import java.util.List;
 
@@ -19,15 +18,15 @@ public interface CameraStudioService {
 	 *
 	 * @param player The player that'll travel along this set of points
 	 * @param timeInput The amount of time the cinematic should take
-	 * @param locations The locations to draw the cinematic path on
+	 * @param positions The locations to draw the cinematic path on
 	 * @param endPoint The type of end point the path should have
 	 * @param customEnd If the end point is custom, it must have that value specified. Otherwise, will default to path's end
 	 */
-	default void travel(Player player, String timeInput, World world, List<Vector> locations, List<CameraPath.Rotation> rotations, EnumEndPoint endPoint, Location customEnd) {
-		this.travel(player, GeneralUtils.parseTimeString(timeInput), world, locations, rotations, endPoint, customEnd);
+	default void travel(Player player, String timeInput, List<CameraPosition> positions, EnumEndPoint endPoint, Location customEnd) {
+		this.travel(player, GeneralUtils.parseTimeString(timeInput), positions, endPoint, customEnd);
 	}
 
-	void travel(Player player, long time, World world, List<Vector> locations, List<CameraPath.Rotation> rotations, EnumEndPoint endPoint, Location customEnd);
+	void travel(Player player, long time, List<CameraPosition> positions, EnumEndPoint endPoint, Location customEnd);
 
 	void travel(Player player, CameraPath path);
 
